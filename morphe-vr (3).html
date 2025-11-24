@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morphe VR - Spatial Synthesizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 100%);
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 10, 30, 0.9);
+            padding: 20px;
+            padding-bottom: 40px;
+            border-radius: 15px;
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+            max-height: calc(100vh - 40px);
+            overflow-y: scroll;
+            overflow-x: hidden;
+            z-index: 100;
+        }
+        
+        #controls::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #controls::-webkit-scrollbar-track {
+            background: rgba(100, 200, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        #controls::-webkit-scrollbar-thumb {
+            background: rgba(100, 200, 255, 0.5);
+            border-radius: 4px;
+        }
+        
+        #controls::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 200, 255, 0.7);
+        }
+
+        .control-section {
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(100, 200, 255, 0.2);
+        }
+
+        .control-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        h2 {
+            font-size: 15px;
+            margin-bottom: 12px;
+            color: #64c8ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 11px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(100, 200, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #64c8ff;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(100, 200, 255, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #64c8ff;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(100, 200, 255, 0.5);
+        }
+
+        .value-display {
+            display: inline-block;
+            float: right;
+            font-size: 12px;
+            color: #64c8ff;
+            font-weight: bold;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 4px 0;
+            border: 2px solid #64c8ff;
+            background: rgba(100, 200, 255, 0.1);
+            color: #64c8ff;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: rgba(100, 200, 255, 0.3);
+            box-shadow: 0 0 15px rgba(100, 200, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.active {
+            background: #64c8ff;
+            color: #0a0a1a;
+            box-shadow: 0 0 20px rgba(100, 200, 255, 0.8);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #64c8ff;
+            background: rgba(100, 200, 255, 0.1);
+            color: #64c8ff;
+            font-size: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select option {
+            background: #0a0a1a;
+            color: #64c8ff;
+        }
+
+        #info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(10, 10, 30, 0.9);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            backdrop-filter: blur(10px);
+            font-size: 12px;
+            z-index: 100;
+        }
+
+        #info div {
+            margin: 5px 0;
+        }
+
+        .info-label {
+            color: #aaa;
+            display: inline-block;
+            width: 80px;
+        }
+
+        .info-value {
+            color: #64c8ff;
+            font-weight: bold;
+        }
+
+        #gestures {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(10, 10, 30, 0.9);
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+            z-index: 100;
+        }
+        
+        #gestures h2 {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .gesture-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 6px;
+            margin: 3px 0;
+            background: rgba(100, 200, 255, 0.1);
+            border-radius: 4px;
+            font-size: 10px;
+        }
+
+        .gesture-name {
+            color: #64c8ff;
+            font-weight: bold;
+        }
+
+        .gesture-key {
+            background: rgba(100, 200, 255, 0.3);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 9px;
+        }
+
+        #toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(100, 200, 255, 0.95);
+            color: #0a0a1a;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 0 30px rgba(100, 200, 255, 0.8);
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        .color-option.active {
+            border-color: #fff;
+            box-shadow: 0 0 20px currentColor;
+        }
+
+        .path-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(100, 200, 255, 0.1);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 11px;
+        }
+
+        .path-item:hover {
+            background: rgba(100, 200, 255, 0.2);
+        }
+
+        .path-item.selected {
+            background: rgba(100, 200, 255, 0.3);
+            border: 1px solid #64c8ff;
+        }
+
+        .path-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #64c8ff;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .path-checkbox.checked::after {
+            content: '✓';
+            color: #64c8ff;
+            font-weight: bold;
+        }
+
+        .path-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .path-info {
+            flex-grow: 1;
+            color: #aaa;
+        }
+
+        .path-delete {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 100, 100, 0.2);
+            color: #ff6464;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .path-delete:hover {
+            background: rgba(255, 100, 100, 0.5);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="canvas"></canvas>
+        
+        <div id="controls">
+            <div class="control-section">
+                <h2>🎨 Drawing</h2>
+                <div class="button-group">
+                    <button id="drawBtn" class="active">Draw</button>
+                    <button id="eraseBtn">Erase</button>
+                </div>
+                <div class="control-group">
+                    <button id="liveDrawBtn" class="active">🔊 Live Audio</button>
+                </div>
+                <div class="control-group">
+                    <label>Color</label>
+                    <div class="color-picker">
+                        <div class="color-option active" style="background: #64c8ff;" data-color="#64c8ff"></div>
+                        <div class="color-option" style="background: #ff64c8;" data-color="#ff64c8"></div>
+                        <div class="color-option" style="background: #c8ff64;" data-color="#c8ff64"></div>
+                        <div class="color-option" style="background: #ff6464;" data-color="#ff6464"></div>
+                        <div class="color-option" style="background: #ffc864;" data-color="#ffc864"></div>
+                        <div class="color-option" style="background: #c864ff;" data-color="#c864ff"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h2>🎵 Synthesis</h2>
+                <div class="control-group">
+                    <label>Volume <span class="value-display" id="volumeValue">30%</span></label>
+                    <input type="range" id="volume" min="0" max="100" value="30" step="1">
+                </div>
+                <div class="control-group">
+                    <label>Waveform</label>
+                    <select id="waveform">
+                        <option value="sine">Sine</option>
+                        <option value="square">Square</option>
+                        <option value="sawtooth">Sawtooth</option>
+                        <option value="triangle">Triangle</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Base Frequency <span class="value-display" id="freqValue">440 Hz</span></label>
+                    <input type="range" id="baseFreq" min="100" max="1000" value="440" step="10">
+                </div>
+                <div class="control-group">
+                    <label>Attack <span class="value-display" id="attackValue">0.1s</span></label>
+                    <input type="range" id="attack" min="0.01" max="1" value="0.1" step="0.01">
+                </div>
+                <div class="control-group">
+                    <label>Release <span class="value-display" id="releaseValue">0.3s</span></label>
+                    <input type="range" id="release" min="0.01" max="2" value="0.3" step="0.01">
+                </div>
+                <div class="control-group">
+                    <label>Resonance <span class="value-display" id="resValue">1</span></label>
+                    <input type="range" id="resonance" min="0.1" max="20" value="1" step="0.1">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h2>▶️ Playback</h2>
+                <button id="playBtn">Play Selected</button>
+                <button id="loopBtn">Loop Off</button>
+                <div class="control-group">
+                    <label>Speed <span class="value-display" id="speedValue">1x</span></label>
+                    <input type="range" id="speed" min="0.1" max="3" value="1" step="0.1">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h2>🎼 Paths</h2>
+                <div class="button-group">
+                    <button id="selectAllBtn">Select All</button>
+                    <button id="deselectAllBtn">Deselect All</button>
+                </div>
+                <div id="pathList" style="max-height: 200px; overflow-y: auto; margin-top: 10px;">
+                    <div style="color: #666; font-size: 11px; text-align: center; padding: 20px;">No paths yet</div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h2>🥽 VR Mode</h2>
+                <button id="vrBtn">Enter VR</button>
+                <div id="vrStatus" style="font-size: 11px; color: #666; margin-top: 8px; text-align: center;">VR not available</div>
+            </div>
+
+            <div class="control-section">
+                <button id="clearBtn">Clear All</button>
+            </div>
+        </div>
+
+        <div id="info">
+            <div><span class="info-label">Drawing:</span><span class="info-value" id="drawingStatus">Ready</span></div>
+            <div><span class="info-label">Points:</span><span class="info-value" id="pointCount">0</span></div>
+            <div><span class="info-label">Playing:</span><span class="info-value" id="playStatus">Stopped</span></div>
+        </div>
+
+        <div id="gestures">
+            <h2 style="cursor: pointer;" id="gesturesToggle">⌨️ Shortcuts ▼</h2>
+            <div id="gesturesContent">
+                <div class="gesture-item">
+                    <span class="gesture-name">Draw</span>
+                    <span class="gesture-key">D</span>
+                </div>
+                <div class="gesture-item">
+                    <span class="gesture-name">Erase</span>
+                    <span class="gesture-key">E</span>
+                </div>
+                <div class="gesture-item">
+                    <span class="gesture-name">Live Audio</span>
+                    <span class="gesture-key">M</span>
+                </div>
+                <div class="gesture-item">
+                    <span class="gesture-name">Play/Stop</span>
+                    <span class="gesture-key">Space</span>
+                </div>
+                <div class="gesture-item">
+                    <span class="gesture-name">Loop</span>
+                    <span class="gesture-key">L</span>
+                </div>
+                <div class="gesture-item">
+                    <span class="gesture-name">Select All</span>
+                    <span class="gesture-key">A</span>
+                </div>
+                <div class="gesture-item">
+                    <span class="gesture-name">Clear</span>
+                    <span class="gesture-key">C</span>
+                </div>
+                <div class="gesture-item">
+                    <span class="gesture-name">Rotate</span>
+                    <span class="gesture-key">Drag</span>
+                </div>
+                <h2 style="margin-top: 10px; font-size: 14px;">🥽 VR</h2>
+                <div class="gesture-item">
+                    <span class="gesture-name">Draw 3D</span>
+                    <span class="gesture-key">Trigger</span>
+                </div>
+                <div class="gesture-item">
+                    <span class="gesture-name">Toggle Menu</span>
+                    <span class="gesture-key">Grip</span>
+                </div>
+                <div class="gesture-item">
+                    <span class="gesture-name">Move</span>
+                    <span class="gesture-key">Stick</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="toast"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Audio Context
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Three.js Scene Setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ 
+            canvas: document.getElementById('canvas'),
+            antialias: true,
+            alpha: true
+        });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x0a0a1a, 1);
+        renderer.xr.enabled = true;
+        camera.position.z = 5;
+
+        // VR Setup
+        function setupVR() {
+            // Check if VR is supported
+            if ('xr' in navigator) {
+                navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+                    if (supported) {
+                        document.getElementById('vrStatus').textContent = 'VR Ready';
+                        document.getElementById('vrStatus').style.color = '#64c8ff';
+                        document.getElementById('vrBtn').disabled = false;
+                    } else {
+                        document.getElementById('vrStatus').textContent = 'VR Not Supported';
+                        document.getElementById('vrStatus').style.color = '#ff6464';
+                    }
+                }).catch(() => {
+                    document.getElementById('vrStatus').textContent = 'VR Check Failed';
+                    document.getElementById('vrStatus').style.color = '#ff6464';
+                });
+            } else {
+                document.getElementById('vrStatus').textContent = 'WebXR Not Available';
+                document.getElementById('vrStatus').style.color = '#ff6464';
+            }
+            
+            // Setup VR controllers
+            const controller1 = renderer.xr.getController(0);
+            controller1.addEventListener('selectstart', onVRSelectStart);
+            controller1.addEventListener('selectend', onVRSelectEnd);
+            controller1.addEventListener('squeezestart', toggleVRMenu);
+            scene.add(controller1);
+            
+            const controller2 = renderer.xr.getController(1);
+            controller2.addEventListener('selectstart', onVRSelectStart);
+            controller2.addEventListener('selectend', onVRSelectEnd);
+            controller2.addEventListener('squeezestart', toggleVRMenu);
+            scene.add(controller2);
+            
+            // Add controller grips (visual representation)
+            const controllerModelFactory = createControllerModel();
+            
+            const grip1 = renderer.xr.getControllerGrip(0);
+            grip1.add(controllerModelFactory.clone());
+            scene.add(grip1);
+            
+            const grip2 = renderer.xr.getControllerGrip(1);
+            grip2.add(controllerModelFactory.clone());
+            scene.add(grip2);
+            
+            vrControllers.push({ controller: controller1, grip: grip1 });
+            vrControllers.push({ controller: controller2, grip: grip2 });
+            
+            // Add ray indicators to controllers
+            vrControllers.forEach(({ controller }) => {
+                const geometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(0, 0, 0),
+                    new THREE.Vector3(0, 0, -1)
+                ]);
+                const material = new THREE.LineBasicMaterial({ color: 0x64c8ff });
+                const line = new THREE.Line(geometry, material);
+                line.scale.z = 5;
+                controller.add(line);
+            });
+        }
+        
+        function createVRMenu() {
+            const menuGroup = new THREE.Group();
+            
+            // Create a panel background
+            const panelGeometry = new THREE.PlaneGeometry(1.5, 1.2);
+            const panelMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x0a0a1a, 
+                transparent: true, 
+                opacity: 0.9,
+                side: THREE.DoubleSide
+            });
+            const panel = new THREE.Mesh(panelGeometry, panelMaterial);
+            menuGroup.add(panel);
+            
+            // Add border
+            const borderGeometry = new THREE.EdgesGeometry(panelGeometry);
+            const borderMaterial = new THREE.LineBasicMaterial({ color: 0x64c8ff, linewidth: 2 });
+            const border = new THREE.LineSegments(borderGeometry, borderMaterial);
+            menuGroup.add(border);
+            
+            // Create canvas for text
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            
+            // Function to update menu text
+            menuGroup.updateText = () => {
+                ctx.fillStyle = '#0a0a1a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.font = 'bold 40px Arial';
+                ctx.fillStyle = '#64c8ff';
+                ctx.textAlign = 'center';
+                ctx.fillText('MORPHE VR', canvas.width / 2, 60);
+                
+                ctx.font = '28px Arial';
+                ctx.fillStyle = '#aaaaaa';
+                ctx.textAlign = 'left';
+                
+                const selectedCount = allPaths.filter(p => p.selected).length;
+                const totalPoints = allPaths.reduce((sum, path) => sum + path.points.length, 0);
+                
+                let y = 120;
+                const lineHeight = 40;
+                
+                ctx.fillText(`Mode: ${mode === 'draw' ? 'DRAW' : 'ERASE'}`, 40, y);
+                y += lineHeight;
+                ctx.fillText(`Live Audio: ${liveDrawingEnabled ? 'ON' : 'OFF'}`, 40, y);
+                y += lineHeight;
+                ctx.fillText(`Volume: ${Math.round(masterVolume * 100)}%`, 40, y);
+                y += lineHeight;
+                ctx.fillText(`Paths: ${allPaths.length}`, 40, y);
+                y += lineHeight;
+                ctx.fillText(`Selected: ${selectedCount}`, 40, y);
+                y += lineHeight;
+                ctx.fillText(`Points: ${totalPoints}`, 40, y);
+                y += lineHeight;
+                ctx.fillText(`Playing: ${isPlaying ? 'YES' : 'NO'}`, 40, y);
+                y += lineHeight;
+                
+                ctx.font = 'bold 24px Arial';
+                ctx.fillStyle = '#64c8ff';
+                y += 20;
+                ctx.fillText('CONTROLS:', 40, y);
+                y += 35;
+                
+                ctx.font = '22px Arial';
+                ctx.fillStyle = '#aaaaaa';
+                ctx.fillText('Trigger: Draw', 40, y);
+                y += 35;
+                ctx.fillText('Grip: Toggle Menu', 40, y);
+                
+                texture.needsUpdate = true;
+            };
+            
+            // Create texture from canvas
+            const texture = new THREE.CanvasTexture(canvas);
+            const textMaterial = new THREE.MeshBasicMaterial({ 
+                map: texture, 
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            const textMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.4, 1.1),
+                textMaterial
+            );
+            textMesh.position.z = 0.01;
+            menuGroup.add(textMesh);
+            
+            // Position menu in front and to the left
+            menuGroup.position.set(-1, 1.2, -1.5);
+            menuGroup.rotation.y = Math.PI / 6; // Angle it slightly toward user
+            
+            menuGroup.updateText();
+            
+            return menuGroup;
+        }
+        
+        function toggleVRMenu() {
+            if (!vrMenu) return;
+            
+            vrMenuVisible = !vrMenuVisible;
+            vrMenu.visible = vrMenuVisible;
+            
+            if (vrMenuVisible) {
+                vrMenu.updateText();
+            }
+        }
+        
+        function createControllerModel() {
+            // Simple controller visualization
+            const geometry = new THREE.CylinderGeometry(0.02, 0.02, 0.1, 8);
+            const material = new THREE.MeshStandardMaterial({ color: 0x64c8ff });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.rotation.x = -Math.PI / 2;
+            
+            // Add a sphere at the tip
+            const tipGeometry = new THREE.SphereGeometry(0.03, 8, 8);
+            const tipMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x64c8ff,
+                emissive: 0x64c8ff,
+                emissiveIntensity: 0.5
+            });
+            const tip = new THREE.Mesh(tipGeometry, tipMaterial);
+            tip.position.z = -0.05;
+            
+            const group = new THREE.Group();
+            group.add(mesh);
+            group.add(tip);
+            
+            return group;
+        }
+        
+        function onVRSelectStart(event) {
+            if (mode !== 'draw') return;
+            
+            const controller = event.target;
+            vrDrawingHand = controller;
+            vrTriggerPressed = true;
+            
+            // Get controller position
+            const position = new THREE.Vector3();
+            controller.getWorldPosition(position);
+            
+            currentPath = [];
+            currentPath.push(position.clone());
+            
+            const geometry = new THREE.BufferGeometry();
+            const material = new THREE.LineBasicMaterial({ 
+                color: currentColor,
+                linewidth: 3
+            });
+            
+            currentLine = new THREE.Line(geometry, material);
+            scene.add(currentLine);
+            
+            isDrawing = true;
+            updateInfo();
+        }
+        
+        function onVRSelectEnd(event) {
+            if (event.target === vrDrawingHand) {
+                vrTriggerPressed = false;
+                stopDrawing();
+                vrDrawingHand = null;
+            }
+        }
+        
+        function updateVRDrawing() {
+            if (!vrTriggerPressed || !vrDrawingHand || !isDrawing) return;
+            
+            const position = new THREE.Vector3();
+            vrDrawingHand.getWorldPosition(position);
+            
+            // Only add point if it's far enough from last point
+            if (currentPath.length > 0) {
+                const lastPoint = currentPath[currentPath.length - 1];
+                const distance = position.distanceTo(lastPoint);
+                if (distance < 0.01) return; // Minimum distance threshold
+            }
+            
+            currentPath.push(position.clone());
+            
+            const points = currentPath.map(p => new THREE.Vector3(p.x, p.y, p.z));
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            currentLine.geometry.dispose();
+            currentLine.geometry = geometry;
+            
+            // Play note while drawing (throttled)
+            if (liveDrawingEnabled && drawThrottle <= 0) {
+                playNote(position, 0.05);
+                drawThrottle = 3;
+            }
+            drawThrottle--;
+            
+            updateInfo();
+            
+            // Update VR menu
+            if (vrMenu && vrMenuVisible) {
+                vrMenu.updateText();
+            }
+        }
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+        
+        const pointLight1 = new THREE.PointLight(0x64c8ff, 1, 100);
+        pointLight1.position.set(10, 10, 10);
+        scene.add(pointLight1);
+        
+        const pointLight2 = new THREE.PointLight(0xff64c8, 0.5, 100);
+        pointLight2.position.set(-10, -10, 5);
+        scene.add(pointLight2);
+
+        // Grid - horizontal floor
+        const gridHelper = new THREE.GridHelper(20, 20, 0x64c8ff, 0x1a0a2e);
+        gridHelper.position.y = -2; // Lower it so you're standing above it
+        scene.add(gridHelper);
+
+        // State
+        let isDrawing = false;
+        let currentPath = [];
+        let allPaths = [];
+        let currentLine = null;
+        let currentColor = 0x64c8ff;
+        let mode = 'draw'; // 'draw' or 'erase'
+        let isPlaying = false;
+        let isLooping = false;
+        let playbackIndex = 0;
+        let playbackSpeed = 1;
+        let activeOscillators = [];
+        let liveDrawingEnabled = true;
+        let lastDrawnPoint = null;
+        let drawThrottle = 0;
+        
+        // VR state
+        let vrEnabled = false;
+        let vrControllers = [];
+        let vrDrawingHand = null;
+        let vrTriggerPressed = false;
+        let vrMenu = null;
+        let vrMenuVisible = true;
+        
+        // Camera rotation
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraRotation = { x: 0, y: 0 };
+
+        // Synthesis parameters
+        let waveform = 'sine';
+        let baseFrequency = 440;
+        let attack = 0.1;
+        let release = 0.3;
+        let resonance = 1;
+        let masterVolume = 0.3; // 30% volume
+
+        // Drawing functions
+        function startDrawing(event) {
+            if (mode !== 'draw') return;
+            
+            isDrawing = true;
+            currentPath = [];
+            
+            const rect = renderer.domElement.getBoundingClientRect();
+            const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            const vector = new THREE.Vector3(x, y, 0.5);
+            vector.unproject(camera);
+            
+            const dir = vector.sub(camera.position).normalize();
+            const distance = -camera.position.z / dir.z;
+            const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+            
+            currentPath.push(pos.clone());
+            
+            const geometry = new THREE.BufferGeometry();
+            const material = new THREE.LineBasicMaterial({ 
+                color: currentColor,
+                linewidth: 3
+            });
+            
+            currentLine = new THREE.Line(geometry, material);
+            scene.add(currentLine);
+            
+            updateInfo();
+        }
+
+        function draw(event) {
+            if (!isDrawing || mode !== 'draw') return;
+            
+            const rect = renderer.domElement.getBoundingClientRect();
+            const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            const vector = new THREE.Vector3(x, y, 0.5);
+            vector.unproject(camera);
+            
+            const dir = vector.sub(camera.position).normalize();
+            const distance = -camera.position.z / dir.z;
+            const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+            
+            currentPath.push(pos.clone());
+            
+            const points = currentPath.map(p => new THREE.Vector3(p.x, p.y, p.z));
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            currentLine.geometry.dispose();
+            currentLine.geometry = geometry;
+            
+            // Play note while drawing (throttled)
+            if (liveDrawingEnabled && drawThrottle <= 0) {
+                playNote(pos, 0.05);
+                drawThrottle = 3; // Throttle to every 3rd frame
+            }
+            drawThrottle--;
+            
+            updateInfo();
+        }
+
+        function stopDrawing() {
+            if (isDrawing && currentPath.length > 1) {
+                allPaths.push({
+                    points: currentPath,
+                    color: currentColor,
+                    line: currentLine,
+                    selected: true, // New paths are selected by default
+                    id: Date.now() + Math.random()
+                });
+                updatePathList();
+            }
+            isDrawing = false;
+            currentPath = [];
+            currentLine = null;
+            drawThrottle = 0;
+            updateInfo();
+        }
+
+        function erase(event) {
+            if (mode !== 'erase') return;
+            
+            const rect = renderer.domElement.getBoundingClientRect();
+            const mouse = new THREE.Vector2(
+                ((event.clientX - rect.left) / rect.width) * 2 - 1,
+                -((event.clientY - rect.top) / rect.height) * 2 + 1
+            );
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            
+            const objects = allPaths.map(p => p.line);
+            const intersects = raycaster.intersectObjects(objects);
+            
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                const pathIndex = allPaths.findIndex(p => p.line === object);
+                
+                if (pathIndex !== -1) {
+                    scene.remove(allPaths[pathIndex].line);
+                    allPaths[pathIndex].line.geometry.dispose();
+                    allPaths[pathIndex].line.material.dispose();
+                    allPaths.splice(pathIndex, 1);
+                    showToast('Path Erased');
+                    updateInfo();
+                }
+            }
+        }
+
+        // Camera rotation
+        function startDrag(event) {
+            if (isDrawing) return;
+            isDragging = true;
+            previousMousePosition = {
+                x: event.clientX,
+                y: event.clientY
+            };
+        }
+
+        function drag(event) {
+            if (!isDragging) return;
+            
+            const deltaMove = {
+                x: event.clientX - previousMousePosition.x,
+                y: event.clientY - previousMousePosition.y
+            };
+            
+            cameraRotation.y += deltaMove.x * 0.005;
+            cameraRotation.x += deltaMove.y * 0.005;
+            
+            // Limit vertical rotation
+            cameraRotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraRotation.x));
+            
+            const radius = 5;
+            camera.position.x = radius * Math.sin(cameraRotation.y) * Math.cos(cameraRotation.x);
+            camera.position.y = radius * Math.sin(cameraRotation.x);
+            camera.position.z = radius * Math.cos(cameraRotation.y) * Math.cos(cameraRotation.x);
+            camera.lookAt(0, 0, 0);
+            
+            previousMousePosition = {
+                x: event.clientX,
+                y: event.clientY
+            };
+        }
+
+        function stopDrag() {
+            isDragging = false;
+        }
+
+        // Audio synthesis
+        function playNote(point, duration = 0.2) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            
+            // Map Y position to frequency (higher = higher pitch)
+            const frequency = baseFrequency + (point.y * 200);
+            
+            oscillator.type = waveform;
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1000 + (point.x * 500), audioContext.currentTime);
+            filter.Q.setValueAtTime(resonance, audioContext.currentTime);
+            
+            // ADSR envelope with master volume
+            const peakGain = masterVolume * 0.3; // Max gain adjusted by master volume
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(peakGain, audioContext.currentTime + attack);
+            gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration + release);
+            
+            oscillator.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration + release);
+            
+            activeOscillators.push({ oscillator, gainNode });
+            
+            // Cleanup
+            setTimeout(() => {
+                const index = activeOscillators.findIndex(o => o.oscillator === oscillator);
+                if (index !== -1) {
+                    activeOscillators.splice(index, 1);
+                }
+            }, (duration + release) * 1000);
+        }
+
+        // Playback
+        function playPath() {
+            if (allPaths.length === 0) {
+                showToast('No paths to play!');
+                return;
+            }
+            
+            const selectedPaths = allPaths.filter(p => p.selected);
+            if (selectedPaths.length === 0) {
+                showToast('No paths selected!');
+                return;
+            }
+            
+            if (isPlaying) {
+                stopPlayback();
+                return;
+            }
+            
+            isPlaying = true;
+            document.getElementById('playBtn').textContent = 'Stop';
+            updateInfo();
+            
+            playbackLoop();
+        }
+
+        function playbackLoop() {
+            if (!isPlaying) return;
+            
+            const selectedPaths = allPaths.filter(p => p.selected);
+            
+            if (selectedPaths.length === 0) {
+                stopPlayback();
+                return;
+            }
+            
+            // Play all selected paths simultaneously
+            selectedPaths.forEach(path => {
+                const pointDelay = (100 / playbackSpeed);
+                
+                path.points.forEach((point, i) => {
+                    setTimeout(() => {
+                        if (isPlaying) {
+                            playNote(point, 0.1);
+                            createPlaybackParticle(point, path.color);
+                        }
+                    }, i * pointDelay);
+                });
+            });
+            
+            // Find the longest path to determine when to loop
+            const maxLength = Math.max(...selectedPaths.map(p => p.points.length));
+            const totalDuration = maxLength * (100 / playbackSpeed) + 200;
+            
+            setTimeout(() => {
+                if (isPlaying && isLooping) {
+                    playbackLoop();
+                } else if (isPlaying) {
+                    stopPlayback();
+                }
+            }, totalDuration);
+        }
+
+        function stopPlayback() {
+            isPlaying = false;
+            playbackIndex = 0;
+            document.getElementById('playBtn').textContent = 'Play Path';
+            
+            // Stop all active oscillators
+            activeOscillators.forEach(({ oscillator, gainNode }) => {
+                gainNode.gain.cancelScheduledValues(audioContext.currentTime);
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.1);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            });
+            activeOscillators = [];
+            
+            updateInfo();
+        }
+
+        function createPlaybackParticle(position, color) {
+            const geometry = new THREE.SphereGeometry(0.1, 8, 8);
+            const material = new THREE.MeshBasicMaterial({ color: color });
+            const particle = new THREE.Mesh(geometry, material);
+            
+            particle.position.copy(position);
+            scene.add(particle);
+            
+            let scale = 1;
+            const animate = () => {
+                scale += 0.1;
+                particle.scale.set(scale, scale, scale);
+                material.opacity = 1 - (scale - 1) / 2;
+                material.transparent = true;
+                
+                if (scale < 3) {
+                    requestAnimationFrame(animate);
+                } else {
+                    scene.remove(particle);
+                    geometry.dispose();
+                    material.dispose();
+                }
+            };
+            animate();
+        }
+
+        function clearAll() {
+            allPaths.forEach(path => {
+                scene.remove(path.line);
+                path.line.geometry.dispose();
+                path.line.material.dispose();
+            });
+            allPaths = [];
+            stopPlayback();
+            showToast('All paths cleared');
+            updateInfo();
+            updatePathList();
+        }
+
+        function updatePathList() {
+            const pathList = document.getElementById('pathList');
+            
+            if (allPaths.length === 0) {
+                pathList.innerHTML = '<div style="color: #666; font-size: 11px; text-align: center; padding: 20px;">No paths yet</div>';
+                return;
+            }
+            
+            pathList.innerHTML = '';
+            
+            allPaths.forEach((path, index) => {
+                const pathItem = document.createElement('div');
+                pathItem.className = 'path-item' + (path.selected ? ' selected' : '');
+                
+                const checkbox = document.createElement('div');
+                checkbox.className = 'path-checkbox' + (path.selected ? ' checked' : '');
+                
+                const colorDot = document.createElement('div');
+                colorDot.className = 'path-color';
+                colorDot.style.background = `#${path.color.toString(16).padStart(6, '0')}`;
+                
+                const info = document.createElement('div');
+                info.className = 'path-info';
+                info.textContent = `Path ${index + 1} (${path.points.length} pts)`;
+                
+                const deleteBtn = document.createElement('div');
+                deleteBtn.className = 'path-delete';
+                deleteBtn.textContent = '×';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deletePath(index);
+                };
+                
+                pathItem.appendChild(checkbox);
+                pathItem.appendChild(colorDot);
+                pathItem.appendChild(info);
+                pathItem.appendChild(deleteBtn);
+                
+                pathItem.onclick = () => togglePathSelection(index);
+                
+                pathList.appendChild(pathItem);
+            });
+        }
+
+        function togglePathSelection(index) {
+            allPaths[index].selected = !allPaths[index].selected;
+            updatePathList();
+            updateInfo();
+        }
+
+        function deletePath(index) {
+            scene.remove(allPaths[index].line);
+            allPaths[index].line.geometry.dispose();
+            allPaths[index].line.material.dispose();
+            allPaths.splice(index, 1);
+            updatePathList();
+            updateInfo();
+            showToast('Path deleted');
+        }
+
+        function selectAllPaths() {
+            allPaths.forEach(path => path.selected = true);
+            updatePathList();
+            showToast('All paths selected');
+        }
+
+        function deselectAllPaths() {
+            allPaths.forEach(path => path.selected = false);
+            updatePathList();
+            showToast('All paths deselected');
+        }
+
+        // UI Updates
+        function updateInfo() {
+            document.getElementById('drawingStatus').textContent = 
+                isDrawing ? 'Drawing...' : (mode === 'draw' ? 'Ready' : 'Erase Mode');
+            
+            const totalPoints = allPaths.reduce((sum, path) => sum + path.points.length, 0);
+            document.getElementById('pointCount').textContent = totalPoints;
+            
+            const selectedCount = allPaths.filter(p => p.selected).length;
+            document.getElementById('playStatus').textContent = 
+                isPlaying ? `Playing ${selectedCount} path(s)` : `${selectedCount}/${allPaths.length} selected`;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 1500);
+        }
+
+        // Event Listeners
+        renderer.domElement.addEventListener('mousedown', (e) => {
+            if (mode === 'draw') {
+                startDrawing(e);
+            } else if (mode === 'erase') {
+                erase(e);
+            } else {
+                startDrag(e);
+            }
+        });
+
+        renderer.domElement.addEventListener('mousemove', (e) => {
+            if (isDrawing) {
+                draw(e);
+            } else if (isDragging) {
+                drag(e);
+            }
+        });
+
+        renderer.domElement.addEventListener('mouseup', () => {
+            stopDrawing();
+            stopDrag();
+        });
+
+        renderer.domElement.addEventListener('mouseleave', () => {
+            stopDrawing();
+            stopDrag();
+        });
+
+        // Controls
+        document.getElementById('drawBtn').addEventListener('click', () => {
+            mode = 'draw';
+            document.getElementById('drawBtn').classList.add('active');
+            document.getElementById('eraseBtn').classList.remove('active');
+            renderer.domElement.style.cursor = 'crosshair';
+            showToast('Draw Mode');
+            updateInfo();
+        });
+
+        document.getElementById('eraseBtn').addEventListener('click', () => {
+            mode = 'erase';
+            document.getElementById('eraseBtn').classList.add('active');
+            document.getElementById('drawBtn').classList.remove('active');
+            renderer.domElement.style.cursor = 'pointer';
+            showToast('Erase Mode');
+            updateInfo();
+        });
+
+        document.getElementById('liveDrawBtn').addEventListener('click', () => {
+            liveDrawingEnabled = !liveDrawingEnabled;
+            document.getElementById('liveDrawBtn').classList.toggle('active', liveDrawingEnabled);
+            showToast(liveDrawingEnabled ? 'Live Audio On' : 'Live Audio Off');
+        });
+
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                currentColor = parseInt(option.dataset.color.replace('#', '0x'));
+                showToast('Color Changed');
+            });
+        });
+
+        document.getElementById('waveform').addEventListener('change', (e) => {
+            waveform = e.target.value;
+            showToast(`Waveform: ${waveform}`);
+        });
+
+        document.getElementById('volume').addEventListener('input', (e) => {
+            masterVolume = parseFloat(e.target.value) / 100;
+            document.getElementById('volumeValue').textContent = `${e.target.value}%`;
+        });
+
+        document.getElementById('baseFreq').addEventListener('input', (e) => {
+            baseFrequency = parseFloat(e.target.value);
+            document.getElementById('freqValue').textContent = `${baseFrequency} Hz`;
+        });
+
+        document.getElementById('attack').addEventListener('input', (e) => {
+            attack = parseFloat(e.target.value);
+            document.getElementById('attackValue').textContent = `${attack.toFixed(2)}s`;
+        });
+
+        document.getElementById('release').addEventListener('input', (e) => {
+            release = parseFloat(e.target.value);
+            document.getElementById('releaseValue').textContent = `${release.toFixed(2)}s`;
+        });
+
+        document.getElementById('resonance').addEventListener('input', (e) => {
+            resonance = parseFloat(e.target.value);
+            document.getElementById('resValue').textContent = resonance.toFixed(1);
+        });
+
+        document.getElementById('playBtn').addEventListener('click', playPath);
+
+        document.getElementById('loopBtn').addEventListener('click', () => {
+            isLooping = !isLooping;
+            document.getElementById('loopBtn').textContent = isLooping ? 'Loop On' : 'Loop Off';
+            document.getElementById('loopBtn').classList.toggle('active', isLooping);
+            showToast(isLooping ? 'Loop Enabled' : 'Loop Disabled');
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            playbackSpeed = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = `${playbackSpeed.toFixed(1)}x`;
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('Clear all paths?')) {
+                clearAll();
+            }
+        });
+
+        document.getElementById('selectAllBtn').addEventListener('click', selectAllPaths);
+        document.getElementById('deselectAllBtn').addEventListener('click', deselectAllPaths);
+        
+        document.getElementById('vrBtn').addEventListener('click', () => {
+            console.log('VR Button clicked, vrEnabled:', vrEnabled);
+            
+            if (!vrEnabled) {
+                // Request VR session with minimal options
+                console.log('Requesting VR session...');
+                console.log('Navigator XR available:', 'xr' in navigator);
+                
+                if (!('xr' in navigator)) {
+                    showToast('WebXR not available in this browser');
+                    document.getElementById('vrStatus').textContent = 'WebXR not supported';
+                    document.getElementById('vrStatus').style.color = '#ff6464';
+                    return;
+                }
+                
+                navigator.xr.requestSession('immersive-vr').then((session) => {
+                    console.log('VR session created successfully');
+                    renderer.xr.setSession(session);
+                    vrEnabled = true;
+                    
+                    // Create and add VR menu
+                    vrMenu = createVRMenu();
+                    scene.add(vrMenu);
+                    
+                    document.getElementById('vrBtn').textContent = 'Exit VR';
+                    document.getElementById('vrStatus').textContent = 'VR Active';
+                    showToast('VR Mode Activated! 🥽');
+                    
+                    session.addEventListener('end', () => {
+                        console.log('VR session ended');
+                        vrEnabled = false;
+                        vrTriggerPressed = false;
+                        vrDrawingHand = null;
+                        
+                        // Remove VR menu
+                        if (vrMenu) {
+                            scene.remove(vrMenu);
+                            vrMenu = null;
+                        }
+                        
+                        document.getElementById('vrBtn').textContent = 'Enter VR';
+                        document.getElementById('vrStatus').textContent = 'VR Ready';
+                        showToast('VR Mode Ended');
+                    });
+                }).catch((err) => {
+                    console.error('VR Error:', err);
+                    console.error('Error name:', err.name);
+                    console.error('Error message:', err.message);
+                    
+                    let errorMsg = 'VR Error: ';
+                    if (err.name === 'NotSupportedError') {
+                        errorMsg = 'VR not supported. Try Chrome/Edge with HTTPS.';
+                    } else if (err.name === 'SecurityError') {
+                        errorMsg = 'VR blocked. Needs HTTPS or localhost.';
+                    } else {
+                        errorMsg += err.message;
+                    }
+                    
+                    showToast(errorMsg);
+                    document.getElementById('vrStatus').textContent = 'VR Error';
+                    document.getElementById('vrStatus').style.color = '#ff6464';
+                });
+            } else {
+                // Exit VR
+                console.log('Exiting VR...');
+                renderer.xr.getSession().then((session) => {
+                    if (session) {
+                        session.end();
+                    }
+                }).catch((err) => {
+                    console.error('Error ending VR:', err);
+                });
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyD') {
+                document.getElementById('drawBtn').click();
+            } else if (e.code === 'KeyE') {
+                document.getElementById('eraseBtn').click();
+            } else if (e.code === 'KeyM') {
+                document.getElementById('liveDrawBtn').click();
+            } else if (e.code === 'Space') {
+                e.preventDefault();
+                playPath();
+            } else if (e.code === 'KeyL') {
+                document.getElementById('loopBtn').click();
+            } else if (e.code === 'KeyA') {
+                selectAllPaths();
+            } else if (e.code === 'KeyC') {
+                if (confirm('Clear all paths?')) {
+                    clearAll();
+                }
+            }
+        });
+
+        // Animation loop
+        function animate() {
+            // Update VR drawing if active
+            if (vrEnabled && vrTriggerPressed) {
+                updateVRDrawing();
+            }
+            
+            // Rotate lights
+            const time = Date.now() * 0.001;
+            pointLight1.position.x = Math.sin(time * 0.5) * 10;
+            pointLight1.position.z = Math.cos(time * 0.5) * 10;
+            
+            renderer.render(scene, camera);
+        }
+
+        // Use XR animation loop (works for both VR and non-VR)
+        renderer.setAnimationLoop(animate);
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start
+        setupVR();
+        updateInfo();
+        showToast('Morphe VR Ready! 🎵✨');
+        
+        // Make gestures collapsible
+        document.getElementById('gesturesToggle').addEventListener('click', () => {
+            const content = document.getElementById('gesturesContent');
+            const toggle = document.getElementById('gesturesToggle');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = '⌨️ Shortcuts ▼';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = '⌨️ Shortcuts ▶';
+            }
+        });
+    </script>
+</body>
+</html>
